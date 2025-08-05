@@ -1,0 +1,49 @@
+# **GROW-DUO 코칭 리포트**
+
+**GROW-DUO 코칭 리포트**는 GROW 모델을 기반으로 학생 상담을 체계적으로 진행하고, AI를 활용하여 상담 내용을 분석 및 관리할 수 있도록 돕는 웹 애플리케이션입니다. 상담사는 이 도구를 통해 학생의 성장을 단계적으로 기록하고, 누적된 데이터를 바탕으로 깊이 있는 통찰을 얻을 수 있습니다.
+
+## **✨ 주요 기능**
+
+1. **상담 모드 (Coaching Workflow)**  
+   * **단계별 코칭 가이드**: Goal(목표) → Reality(현실) → Options(대안) → Will(실행 계획) 4단계 워크플로우를 통해 상담을 자연스럽게 유도합니다.  
+   * **코칭 질문 및 팁 제공**: 각 단계마다 상담에 즉시 활용할 수 있는 핵심 질문과 코칭 기술 팁을 제공하여 상담의 질을 높입니다.  
+2. **기록 모드 (AI-Powered Logging)**  
+   * **자동 GROW 모델 분석**: 자유 형식으로 작성된 상담 내용을 AI가 분석하여 GROW 모델의 각 항목에 맞게 자동으로 구조화합니다.  
+   * **다음 회차 질문 추천**: AI가 분석된 상담 내용을 기반으로 다음 상담에서 활용할 수 있는 심층 질문을 3\~4개 추천해줍니다.  
+3. **누적 분석 모드 (Cumulative Analysis)**  
+   * **클라우드 데이터 기반 분석**: 학생 이름을 검색하면 클라우드(Firestore)에 저장된 모든 상담 기록을 불러옵니다.  
+   * **성장 과정 요약**: 분석하고 싶은 리포트를 선택하면, AI가 학생의 목표 변화, 핵심 강점/약점, 실행 계획의 성공 및 어려움 등을 종합적으로 요약하여 리포트를 생성합니다.  
+4. **리포트 관리**  
+   * **PDF 저장**: 모든 상담 내용은 깔끔한 형식의 PDF 파일로 다운로드할 수 있습니다.  
+   * **클라우드 자동 저장**: 생성된 리포트는 학생별로 클라우드 데이터베이스에 자동으로 저장되어 언제든지 다시 확인하고 누적 분석에 활용할 수 있습니다.
+
+## **🛠️ 기술 스택**
+
+* **프론트엔드**: React.js  
+* **스타일링**: Tailwind CSS  
+* **데이터베이스**: Google Firestore  
+* **AI 모델**: Google Gemini API  
+* **PDF 생성**: jsPDF, jspdf-autotable
+
+## **🚀 설치 및 실행 방법**
+
+1. **프로젝트 클론**  
+   git clone https://github.com/your-username/grow-duo-report.git  
+   cd grow-duo-report
+
+2. **필요한 패키지 설치**  
+   npm install
+
+3. **Firebase 설정**  
+   * [Firebase 콘솔](https://console.firebase.google.com/)에서 새 프로젝트를 생성합니다.  
+   * 프로젝트 설정에서 웹 앱을 추가하고 firebaseConfig 객체를 복사합니다.  
+   * src/App.js 파일 상단의 firebaseConfig 변수에 복사한 값을 붙여넣습니다.  
+   * Firestore 데이터베이스를 생성하고, 보안 규칙을 테스트 모드 또는 필요에 맞게 설정합니다.  
+4. **Gemini API 키 설정**  
+   * [Google AI Studio](https://aistudio.google.com/)에서 API 키를 발급받습니다.  
+   * src/App.js 파일 내의 LoggingMode, CumulativeAnalysisMode, FinalReport 컴포넌트에서 apiKey 변수를 찾아 발급받은 키를 할당합니다.  
+   * **주의**: 보안을 위해 실제 배포 시에는 API 키를 환경 변수로 관리하는 것이 좋습니다.  
+5. **로컬 서버 실행**  
+   npm start
+
+   이제 브라우저에서 http://localhost:3000으로 접속하여 애플리케이션을 확인할 수 있습니다.
