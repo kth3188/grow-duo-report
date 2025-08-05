@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GROW-DUO 코칭 리포트</title>
+    
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React 및 Babel 로드 -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- PDF 라이브러리 로드 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Firebase SDK 로드 -->
+    <script type="module">
+        // Firebase v9+ 모듈 방식 import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // 전역 변수로 할당하여 React 컴포넌트에서 접근 가능하도록 함
+        window.firebase = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            onAuthStateChanged,
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            query,
+            where,
+            serverTimestamp
+        };
+    </script>
+
+    <style>
+        /* 기본 폰트 및 애니메이션 스타일 */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .animate-fade-in-fast {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .prose ul {
+            list-style-position: outside;
+            padding-left: 1.5rem;
+        }
+        .prose li {
+            padding-left: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // --- 한글 폰트(D2Coding) 데이터 ---
+        const D2Coding = "AAEAAAARAQAABAAQR0RFRgQsBBMAAAE4AAAAHkdQT1O1LhjsAAAEsAAAAGJHU1VCW2gAAAACAAAAZAAAAENPU1QAAgAAAAIAAAAzAAAAA09TLzJDAFArAAABgAAAAFZjbWFwDS4FtgAAAqAAAAI0Z2FyaQAAAAEAAAEKAAAAAWZwZ21g3wZgAAAFkAAAAXJnbHlm/fV7sQAAAYwAAADkaGVhZBk96K0AAADcAAAANmhoZWEH3gOFAAABFAAAACRobXR4BEAAAAAAAbAAAAAgbG9jYQAKADgAAAMEAAAADm1heHABGgBuAAABOAAAACBuYW1lAEoApAAABiAAAAJxcG9zdAABAAAAAAMgAAAACQAGAAMAAQAAAAEAAQAAARIAAAADAAAAAwABAAQAAAABAAQABAABAAAAAQAAAAgAAAAGAAAAAwABBAcAAAAAAAQABAABAAAAAQAAAAgAAAAGAAAAAwABBAkAAAAAAAQABAABAAAAAQAAAAgAAAAGAAAAAwABBAoAAAAAAAQABAABAAAAAQAAAAgAAAAGAAAAAwABBDMAAAAAAAQABAABAAAAAQAAAAgAAAAGAAAAAwABBDQAAAAAAAQABAABAAAAAQAAAAgAAAAGAAAAAwABBDUAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGgAAAAEAAAAAAAEAAAABAACAAGg-AAA";
+
+        // --- Firebase 설정 ---
+        // 이 설정 정보는 Canvas 환경에서 자동으로 제공됩니다.
+        // 로컬 테스트 시에는 본인의 Firebase 프로젝트 설정으로 교체해야 합니다.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_AUTH_DOMAIN",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_STORAGE_BUCKET",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+
+        // --- 코칭 가이드 데이터 ---
+        const coachingGuides = {
+          goal: {
+            title: "목표 설정 (Goal)",
+            questions: [
+              "지금 이 시간 상담에서 무엇을 얻고 싶나요?",
+              "앞으로 어떤 모습을 이루고 싶나요? 구체적으로 무엇이 변화되었으면 좋겠나요?",
+              "최근에 가장 자랑스러웠던 성취는 무엇이었나요? 그 경험을 앞으로 어떻게 살릴 수 있을까요?",
+              "당신의 강점이 잘 발휘되는 상황에서 어떤 목표를 세워보고 싶나요?",
+            ],
+            tips: [
+              "열린 질문으로 구체적 목표 도출 유도",
+              "과거 성취 경험 탐색 및 긍정적 강화",
+              "강점(성공 경험, 특성, 자원)에 주목하며 목표와 연결",
+            ],
+          },
+          reality: {
+            title: "현실 점검 (Reality)",
+            questions: [
+              "현재 상황은 어떤가요? 이번 목표와 관련해 어려움이나 도전 과제는 무엇인가요?",
+              "지금 당신이 가진 가장 큰 강점은 무엇이라고 생각하나요? 그 강점을 최근 어디에 어떻게 사용했나요?",
+              "이미 시도해본 방법, 긍정적으로 변화된 점이 있었다면 무엇인가요?",
+              "성취 경험을 되짚어볼 때, 특별히 잘했던 점은 무엇인가요?",
+            ],
+            tips: [
+              "현 상황에 대한 객관적 인식 도모",
+              "강점 및 긍정적 자원 발견을 위한 반추적 대화",
+              "판단 없이 경청, 데이터·사실 기반 피드백 제시",
+            ],
+          },
+          options: {
+            title: "대안 탐색 (Options)",
+            questions: [
+              "목표를 이루기 위해 시도해볼 수 있는 방법에는 어떤 것들이 있을까요?",
+              "당신의 강점을 활용하면 어떤 새로운 해결책이 나올 수 있을까요?",
+              "예전에 강점을 이용해서 어려움을 극복한 경험이 있었나요? 그 경험을 이번에도 사용할 수 있을까요?",
+              "만약 아무런 제약이 없다면 무엇을 해보고 싶나요?",
+            ],
+            tips: [
+              "브레인스토밍 기법 활용 및 제약 없는 사고 강조",
+              "강점 중심의 대안과 다양한 선택지 탐색 독려",
+              "실현 가능성과 본인 의지의 균형 점검",
+            ],
+          },
+          will: {
+            title: "실행 계획 (Will)",
+            questions: [
+              "지금 당장 실천할 수 있는 첫 번째 행동은 무엇일까요?",
+              "이 행동계획을 실천할 때, 당신의 어떤 강점이 도움이 될 것 같나요?",
+              "계획을 실행할 때 장애물이 예상된다면, 그때 어떻게 강점을 활용할 수 있을까요?",
+              "실행에 성공했을 때, 자신을 어떻게 칭찬해주고 싶나요?",
+            ],
+            tips: [
+              "구체적 행동계획 수립(5W1H)",
+              "실행 의지 확인 및 강점-실행 연결",
+              "실행 후 피드백/자기강화 전략 마련",
+            ],
+          },
+        };
+
+
+        // --- 메인 App 컴포넌트 ---
+        function App() {
+            const [page, setPage] = useState('start');
+            const [reportData, setReportData] = useState(null);
+            const [analysisResult, setAnalysisResult] = useState(null);
+            const [globalError, setGlobalError] = useState('');
+            const [firebaseServices, setFirebaseServices] = useState(null);
+            const [isAuthReady, setIsAuthReady] = useState(false);
+
+            // Firebase 초기화 및 인증
+            useEffect(() => {
+                try {
+                    const { 
+                        initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore 
+                    } = window.firebase;
+
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    const db = getFirestore(app);
+                    setFirebaseServices({ app, auth, db });
+
+                    onAuthStateChanged(auth, user => {
+                        if (user) {
+                            console.log("인증된 사용자:", user.uid);
+                            setIsAuthReady(true);
+                        } else {
+                            signInAnonymously(auth).catch(error => {
+                                console.error("익명 로그인 실패:", error);
+                                showGlobalError("데이터베이스 연결에 실패했습니다.");
+                            });
+                        }
+                    });
+                } catch (error) {
+                    console.error("Firebase 초기화 실패:", error);
+                    showGlobalError("설정이 올바르지 않아 데이터베이스에 연결할 수 없습니다.");
+                }
+            }, []);
+
+
+            const showGlobalError = (message) => {
+                setGlobalError(message);
+                setTimeout(() => setGlobalError(''), 4000);
+            };
+
+            const handleStart = (mode, studentInfo) => {
+                if (mode === 'analysis') {
+                    setPage('analysis');
+                } else {
+                    setReportData({ studentInfo, growData: null });
+                    setPage(mode);
+                }
+            };
+
+            const handleComplete = (growData) => {
+                setReportData(prev => ({ ...prev, growData }));
+                setPage('report');
+            };
+
+            const handleAnalysisComplete = (result) => {
+                setAnalysisResult(result);
+                setPage('analysis_report');
+            };
+
+            const handleReset = () => {
+                setReportData(null);
+                setAnalysisResult(null);
+                setPage('start');
+            };
+
+            const renderPage = () => {
+                if (!isAuthReady && page !== 'start') {
+                    return <div className="text-center p-10">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+                        <p className="mt-4 text-slate-600">데이터베이스에 연결 중입니다...</p>
+                    </div>;
+                }
+
+                switch (page) {
+                    case 'counseling':
+                        return <CounselingMode onComplete={handleComplete} studentInfo={reportData.studentInfo} />;
+                    case 'logging':
+                        return <LoggingMode onComplete={handleComplete} studentInfo={reportData.studentInfo} />;
+                    case 'analysis':
+                        return <CumulativeAnalysisMode onComplete={handleAnalysisComplete} onBack={handleReset} db={firebaseServices.db} onError={showGlobalError} />;
+                    case 'report':
+                        return <FinalReport data={reportData} onReset={handleReset} onError={showGlobalError} db={firebaseServices.db} />;
+                    case 'analysis_report':
+                        return <AnalysisReport result={analysisResult} onReset={handleReset} />;
+                    case 'start':
+                    default:
+                        return <StartScreen onStart={handleStart} />;
+                }
+            };
+
+            return (
+                <div className="bg-slate-100 min-h-screen font-sans flex items-center justify-center p-4">
+                    <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-6 md:p-10 transition-all duration-500 relative">
+                        {globalError && (
+                            <div className="absolute top-5 right-5 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg z-20 animate-fade-in">
+                                <strong className="font-bold">오류: </strong>
+                                <span className="block sm:inline">{globalError}</span>
+                            </div>
+                        )}
+                        {renderPage()}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 1. 시작 화면 컴포넌트 ---
+        function StartScreen({ onStart }) {
+            const [studentName, setStudentName] = useState('');
+            const [session, setSession] = useState(1);
+            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+            const [message, setMessage] = useState('');
+
+            const canStart = studentName.trim() !== '' && session > 0;
+
+            const handleStartClick = (mode) => {
+                if (!canStart && mode !== 'analysis') {
+                    setMessage('학생 이름과 상담 회차를 입력해주세요.');
+                    setTimeout(() => setMessage(''), 3000);
+                    return;
+                }
+                const studentInfo = { name: studentName.trim(), session, date };
+                onStart(mode, studentInfo);
+            };
+
+            return (
+                <div className="text-center animate-fade-in">
+                    <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">GROW-DUO 코칭 리포트</h1>
+                    <p className="text-slate-500 mb-8">상담을 기록하거나, 과거 기록을 분석해보세요.</p>
+
+                    <div className="bg-slate-50 p-6 rounded-xl mb-8">
+                        <h3 className="text-xl font-semibold text-slate-700 mb-4">새 상담 기록하기</h3>
+                        <div className="space-y-4 max-w-md mx-auto">
+                            <input type="text" placeholder="학생 이름" value={studentName} onChange={(e) => setStudentName(e.target.value)} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" />
+                            <div className="flex gap-4">
+                                <input type="number" placeholder="상담 회차" value={session} onChange={(e) => setSession(Math.max(1, parseInt(e.target.value) || 1))} className="w-1/2 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" />
+                                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-1/2 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" />
+                            </div>
+                        </div>
+                        {message && <p className="text-red-500 mt-4">{message}</p>}
+                        <div className="flex flex-col md:flex-row gap-4 justify-center mt-6">
+                            <button onClick={() => handleStartClick('counseling')} disabled={!canStart} className="w-full md:w-auto flex-1 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform transform hover:scale-105 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:transform-none">
+                                💬 상담 모드
+                            </button>
+                            <button onClick={() => handleStartClick('logging')} disabled={!canStart} className="w-full md:w-auto flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-transform transform hover:scale-105 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:transform-none">
+                                ✍️ 기록 모드
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-indigo-50 p-6 rounded-xl">
+                        <h3 className="text-xl font-semibold text-slate-700 mb-4">과거 기록 분석하기</h3>
+                        <p className="text-slate-500 mb-4 text-sm">클라우드에 저장된 리포트를 불러와 누적 분석을 진행합니다.</p>
+                        <button onClick={() => handleStartClick('analysis')} className="w-full md:w-auto bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-transform transform hover:scale-105">
+                            📈 누적 분석 모드
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 2. 상담 모드 컴포넌트 (단계별 워크플로우 적용) ---
+        function CounselingMode({ onComplete, studentInfo }) {
+            const [step, setStep] = useState(1);
+            const [growData, setGrowData] = useState({
+                goal: '',
+                reality: { strengths: [], challenges: [] },
+                options: [''],
+                will: ''
+            });
+
+            const nextStep = () => setStep(s => Math.min(s + 1, 4));
+            const prevStep = () => setStep(s => Math.max(s - 1, 1));
+
+            const updateField = (field, value) => {
+                setGrowData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const updateReality = (type, value) => {
+                setGrowData(prev => ({
+                    ...prev,
+                    reality: { ...prev.reality, [type]: value }
+                }));
+            };
+
+            const handleOptionChange = (index, value) => {
+                const newOptions = [...growData.options];
+                newOptions[index] = value;
+                setGrowData(prev => ({ ...prev, options: newOptions }));
+            };
+
+            const addOption = () => setGrowData(prev => ({ ...prev, options: [...prev.options, ''] }));
+            
+            const removeOption = (index) => {
+                if (growData.options.length > 1) {
+                    const newOptions = growData.options.filter((_, i) => i !== index);
+                    setGrowData(prev => ({ ...prev, options: newOptions }));
+                }
+            };
+
+            const handleSubmit = () => {
+                const finalData = {
+                    ...growData,
+                    options: growData.options.filter(o => o.trim() !== '')
+                };
+                onComplete(finalData);
+            };
+
+            const steps = [
+                { key: 'goal', title: 'Goal (목표 설정)' },
+                { key: 'reality', title: 'Reality (현실 점검)' },
+                { key: 'options', title: 'Options (대안 탐색)' },
+                { key: 'will', title: 'Will (실행 계획)' }
+            ];
+
+            return (
+                <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-1">💬 상담 모드: {studentInfo.name}</h2>
+                    <p className="text-slate-500 mb-6">{steps[step - 1].title}</p>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+                        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${(step / 4) * 100}%`, transition: 'width 0.5s ease-in-out' }}></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Left side: Input fields */}
+                        <div className="space-y-6">
+                            {step === 1 && (
+                                <div>
+                                    <label className="font-bold text-slate-700">학생의 목표는 무엇인가요?</label>
+                                    <textarea value={growData.goal} onChange={e => updateField('goal', e.target.value)} className="w-full mt-2 p-2 border rounded-lg" rows="5" placeholder="학생의 목표를 구체적으로 입력하세요."></textarea>
+                                </div>
+                            )}
+                            {step === 2 && (
+                                <div>
+                                    <label className="font-bold text-slate-700">학생의 현재 상황은 어떤가요?</label>
+                                    <div className="mt-2 p-3 bg-slate-50 rounded-lg space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold text-slate-600">강점 / 긍정적 측면</h4>
+                                            <input type="text" value={growData.reality.strengths.join(', ')} onChange={e => updateReality('strengths', e.target.value.split(',').map(s => s.trim()))} className="w-full mt-1 p-2 border rounded-lg" placeholder="쉼표(,)로 강점을 구분하여 입력하세요." />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-slate-600">어려움 / 개선점</h4>
+                                            <input type="text" value={growData.reality.challenges.join(', ')} onChange={e => updateReality('challenges', e.target.value.split(',').map(s => s.trim()))} className="w-full mt-1 p-2 border rounded-lg" placeholder="쉼표(,)로 어려움을 구분하여 입력하세요." />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {step === 3 && (
+                                <div>
+                                    <label className="font-bold text-slate-700">목표 달성을 위해 어떤 방법들이 있을까요?</label>
+                                    {growData.options.map((option, index) => (
+                                        <div key={index} className="flex items-center gap-2 mt-2">
+                                            <input type="text" value={option} onChange={e => handleOptionChange(index, e.target.value)} className="w-full p-2 border rounded-lg" placeholder={`대안 ${index + 1}`} />
+                                            <button onClick={() => removeOption(index)} className={`text-red-500 hover:text-red-700 text-xl font-bold ${growData.options.length <= 1 ? 'invisible' : ''}`}>&times;</button>
+                                        </div>
+                                    ))}
+                                    <button onClick={addOption} className="mt-2 text-sm text-blue-600 hover:underline">+ 대안 추가</button>
+                                </div>
+                            )}
+                            {step === 4 && (
+                                <div>
+                                    <label className="font-bold text-slate-700">구체적인 실행 계획은 무엇인가요?</label>
+                                    <textarea value={growData.will} onChange={e => updateField('will', e.target.value)} className="w-full mt-2 p-2 border rounded-lg" rows="5" placeholder="구체적인 실행 계획을 입력하세요. (무엇을, 언제, 어떻게)"></textarea>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Right side: Coaching Guide */}
+                        <CoachingGuide guide={coachingGuides[steps[step - 1].key]} />
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between mt-8">
+                        <button onClick={prevStep} disabled={step === 1} className="bg-slate-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-600 transition disabled:bg-slate-300 disabled:cursor-not-allowed">이전</button>
+                        {step < 4 && <button onClick={nextStep} className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition">다음</button>}
+                        {step === 4 && <button onClick={handleSubmit} className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition">작성 완료</button>}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 2-1. 코칭 가이드 컴포넌트 ---
+        function CoachingGuide({ guide }) {
+            return (
+                <div className="bg-slate-50 p-4 rounded-lg border">
+                    <h3 className="text-lg font-bold text-slate-700 mb-3">{guide.title} 가이드</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold text-slate-600">💡 핵심 질문 예시</h4>
+                            <ul className="list-disc list-inside text-slate-600 text-sm mt-1 space-y-1">
+                                {guide.questions.map((q, i) => <li key={i}>{q}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-slate-600">🛠️ 코칭 기술 팁</h4>
+                            <ul className="list-disc list-inside text-slate-600 text-sm mt-1 space-y-1">
+                                {guide.tips.map((tip, i) => <li key={i}>{tip}</li>)}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+
+        // --- 3. 기록 모드 컴포넌트 (AI 프롬프트 수정) ---
+        function LoggingMode({ onComplete, studentInfo }) {
+            const [text, setText] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const handleAnalyze = async () => {
+                if (text.trim() === '') {
+                    setError('상담 내용을 입력해주세요.');
+                    return;
+                }
+                setIsLoading(true);
+                setError('');
+
+                const prompt = `
+                    You are an expert school counselor's assistant. Analyze the following counseling transcript and structure it into a GROW model JSON format.
+                    The JSON object must have these keys: "goal" (string), "reality" (object with "strengths" and "challenges" as string arrays), "options" (string array), "will" (string), and "nextSessionQuestions" (an array of 3-4 insightful, open-ended follow-up questions in Korean for the next counseling session, based on the current session's content).
+                    If any information for a key is missing from the text, use an empty string or an empty array.
+                    The entire response must be only the JSON object, with no other text or explanations.
+                    The language of the output values in the JSON should be Korean.
+
+                    --- Counseling Transcript ---
+                    ${text}
+                    --- End Transcript ---
+                `;
+
+                try {
+                    const apiKey = ""; // 여기에 Gemini API 키를 입력하세요.
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API request failed: ${response.statusText}`);
+
+                    const result = await response.json();
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const parsedData = JSON.parse(jsonText);
+
+                    const growData = {
+                        goal: parsedData.goal || '',
+                        reality: {
+                            strengths: Array.isArray(parsedData.reality?.strengths) ? parsedData.reality.strengths : [],
+                            challenges: Array.isArray(parsedData.reality?.challenges) ? parsedData.reality.challenges : [],
+                        },
+                        options: Array.isArray(parsedData.options) ? parsedData.options : [],
+                        will: parsedData.will || '',
+                        nextSessionQuestions: Array.isArray(parsedData.nextSessionQuestions) ? parsedData.nextSessionQuestions : []
+                    };
+
+                    onComplete(growData);
+
+                } catch (e) {
+                    console.error("AI analysis error:", e);
+                    setError("AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">✍️ 기록 모드: {studentInfo.name}</h2>
+                    <p className="text-slate-600 mb-4">상담 내용을 자유롭게 입력해주세요. AI가 GROW 모델에 맞춰 자동으로 정리하고, 다음 회차 질문까지 추천해 드립니다.</p>
+                    <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        className="w-full h-64 p-3 border rounded-lg bg-slate-50 focus:ring-2 focus:ring-green-500"
+                        placeholder="예시) 오늘 OO학생과 이야기했는데, 수학 성적을 올리고 싶어하지만(Goal) 요즘 게임에 너무 많은 시간을 쓰고 있어서(Reality) 고민이라고 했다. 학원에 가거나 친구와 스터디를 하는 방법(Options)을 생각 중인데, 일단 오늘부터 밤 10시 이후에는 게임을 안 하기로 약속했다(Will)."
+                    />
+                    {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                    <button onClick={handleAnalyze} disabled={isLoading} className="w-full mt-4 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition disabled:bg-slate-400 disabled:cursor-wait">
+                        {isLoading ? 'AI가 분석 중입니다...' : 'AI로 분석하기'}
+                    </button>
+                </div>
+            );
+        }
+
+        // --- 4. 누적 분석 모드 (DB 연동) ---
+        function CumulativeAnalysisMode({ onComplete, onBack, db, onError }) {
+            const [studentName, setStudentName] = useState('');
+            const [reports, setReports] = useState([]);
+            const [selectedReports, setSelectedReports] = useState(new Set());
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [step, setStep] = useState('search'); // 'search', 'select', 'analyzing'
+            
+            const { collection, query, where, getDocs } = window.firebase;
+
+            const handleSearch = async () => {
+                if (studentName.trim() === '') {
+                    setError('학생 이름을 입력해주세요.');
+                    return;
+                }
+                setIsLoading(true);
+                setError('');
+                try {
+                    const reportsRef = collection(db, "reports");
+                    const q = query(reportsRef, where("studentInfo.name", "==", studentName.trim()));
+                    const querySnapshot = await getDocs(q);
+                    const fetchedReports = [];
+                    querySnapshot.forEach((doc) => {
+                        fetchedReports.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    fetchedReports.sort((a,b) => new Date(b.studentInfo.date) - new Date(a.studentInfo.date));
+
+                    if (fetchedReports.length === 0) {
+                        setError(`'${studentName}' 학생의 저장된 리포트가 없습니다.`);
+                    } else {
+                        setReports(fetchedReports);
+                        setStep('select');
+                    }
+                } catch (e) {
+                    console.error("Firestore 검색 오류:", e);
+                    setError("리포트를 불러오는 중 오류가 발생했습니다.");
+                    onError("데이터베이스 조회 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleReportToggle = (reportId) => {
+                setSelectedReports(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(reportId)) {
+                        newSet.delete(reportId);
+                    } else {
+                        newSet.add(reportId);
+                    }
+                    return newSet;
+                });
+            };
+            
+            const formatReportForAI = (report) => {
+                const { studentInfo, growData } = report;
+                return `
+        --- 상담일: ${studentInfo.date}, ${studentInfo.session}회차 ---
+        - 목표(Goal): ${growData.goal}
+        - 현실(Reality):
+          - 강점: ${growData.reality.strengths.join(', ')}
+          - 어려움: ${growData.reality.challenges.join(', ')}
+        - 대안(Options): ${growData.options.join(', ')}
+        - 실행계획(Will): ${growData.will}
+        `;
+            };
+
+            const analyzeWithAI = async () => {
+                if (selectedReports.size === 0) {
+                    setError('분석할 리포트를 1개 이상 선택해주세요.');
+                    return;
+                }
+                setIsLoading(true);
+                setError('');
+                setStep('analyzing');
+
+                const contentToAnalyze = reports
+                    .filter(r => selectedReports.has(r.id))
+                    .sort((a, b) => new Date(a.studentInfo.date) - new Date(b.studentInfo.date))
+                    .map(formatReportForAI)
+                    .join('\n');
+
+                const prompt = `
+                    You are a helpful assistant for a school counselor.
+                    The following text contains counseling records for a student, structured using the GROW model. Each record is separated by '--- 상담일 ---'.
+                    Analyze all records cumulatively and provide a summary of the student's progress in Korean.
+                    The analysis should be in Markdown format and include these sections:
+                    1.  **종합 요약 (Overall Summary):** Briefly summarize the student's entire counseling journey, highlighting key changes and growth points.
+                    2.  **목표(Goal)의 변화:** Analyze how the student's goals have evolved or become more specific over the sessions.
+                    3.  **핵심 강점 및 약점 (Key Reality):** Identify recurring strengths and challenges observed across multiple sessions.
+                    4.  **실행 계획(Will) 평가:** Evaluate the characteristics of the action plans and summarize any successes or difficulties in their implementation.
+
+                    --- Counseling Records ---
+                    ${contentToAnalyze}
+                    --- End of Records ---
+                `;
+
+                try {
+                    const apiKey = ""; // 여기에 Gemini API 키를 입력하세요.
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+                    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
+                    const result = await response.json();
+                    const analysisText = result.candidates[0].content.parts[0].text;
+                    onComplete(analysisText);
+
+                } catch (e) {
+                    console.error("AI cumulative analysis error:", e);
+                    setError("AI 누적 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                    setStep('select');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">📈 누적 분석 모드</h2>
+                    <p className="text-slate-600 mb-6">학생 이름을 검색하여 저장된 상담 리포트를 분석합니다.</p>
+                    
+                    {step === 'search' && (
+                        <div className="space-y-4">
+                            <input 
+                                type="text" 
+                                placeholder="분석할 학생 이름 입력" 
+                                value={studentName} 
+                                onChange={(e) => setStudentName(e.target.value)} 
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                            {error && <p className="text-red-500 text-sm">{error}</p>}
+                            <div className="flex flex-col md:flex-row gap-4 mt-4">
+                                <button onClick={handleSearch} disabled={isLoading} className="w-full md:flex-1 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition disabled:bg-slate-400 disabled:cursor-wait">
+                                    {isLoading ? '검색 중...' : '리포트 검색'}
+                                </button>
+                                 <button onClick={onBack} className="w-full md:flex-1 bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition">
+                                    🏠 처음으로
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'select' && (
+                        <div>
+                            <h3 className="text-xl font-semibold text-slate-700 mb-4">'{studentName}' 학생 리포트 목록</h3>
+                            <div className="space-y-2 max-h-60 overflow-y-auto bg-slate-50 p-3 rounded-lg border">
+                                {reports.map(report => (
+                                    <div key={report.id} className={`p-3 rounded-lg cursor-pointer transition ${selectedReports.has(report.id) ? 'bg-indigo-100 ring-2 ring-indigo-400' : 'bg-white hover:bg-indigo-50'}`} onClick={() => handleReportToggle(report.id)}>
+                                        <label className="flex items-center cursor-pointer">
+                                            <input type="checkbox" checked={selectedReports.has(report.id)} readOnly className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <span className="ml-3 font-medium text-slate-800">{report.studentInfo.session}회차 - {report.studentInfo.date}</span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                            {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+                             <div className="flex flex-col md:flex-row gap-4 mt-8">
+                                <button onClick={analyzeWithAI} disabled={isLoading || selectedReports.size === 0} className="w-full md:flex-1 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition disabled:bg-slate-400 disabled:cursor-wait">
+                                    {`분석 시작 (${selectedReports.size}개 선택됨)`}
+                                </button>
+                                 <button onClick={() => { setStep('search'); setError(''); setReports([]); setSelectedReports(new Set()); }} className="w-full md:flex-1 bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition">
+                                    다른 학생 검색
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                     {step === 'analyzing' && (
+                         <div className="text-center p-10">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                            <p className="mt-4 text-slate-600">선택된 리포트를 AI가 분석 중입니다. 잠시만 기다려주세요...</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+
+        // --- 5. 최종 리포트 화면 컴포넌트 ---
+        function FinalReport({ data, onReset, onError, db }) {
+            const [reportData, setReportData] = useState(data.growData);
+            const [helpTarget, setHelpTarget] = useState(null);
+            const [isHelpLoading, setIsHelpLoading] = useState(false);
+            const [isSaving, setIsSaving] = useState(false);
+            const [helpContent, setHelpContent] = useState('');
+            
+            const { collection, addDoc, serverTimestamp } = window.firebase;
+
+            const handleFieldChange = (field, value) => {
+                const keys = field.split('.');
+                setReportData(prev => {
+                    const newData = JSON.parse(JSON.stringify(prev)); // Deep copy
+                    let current = newData;
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        current = current[keys[i]];
+                    }
+                    current[keys[keys.length - 1]] = value;
+                    return newData;
+                });
+            };
+
+            const handleArrayChange = (field, index, value) => {
+                const keys = field.split('.');
+                setReportData(prev => {
+                    const newData = JSON.parse(JSON.stringify(prev)); // Deep copy
+                    let current = newData;
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        current = current[keys[i]];
+                    }
+                    const newArray = [...current[keys[keys.length - 1]]];
+                    newArray[index] = value;
+                    current[keys[keys.length - 1]] = newArray;
+                    return newData;
+                });
+            }
+
+            const requestHelp = async (field, title, content) => {
+                setHelpTarget({ field, title });
+                setIsHelpLoading(true);
+                setHelpContent('');
+
+                const prompt = (Array.isArray(content) ? content.join(', ') : content).trim() === ''
+                    ? `You are a helpful coaching assistant. The user is filling out the '${title}' section of a GROW model report. Please provide a concise, bullet-pointed guide in Korean on what kind of information should be written in this section. Include a good example.`
+                    : `You are a helpful coaching assistant. The user is reviewing the '${title}' section of a GROW model report. The current content is: '${Array.isArray(content) ? content.join(', ') : content}'. Please review this content based on the principles of effective coaching and provide constructive feedback or suggestions for improvement in a concise, bullet-pointed list. Respond in Korean.`;
+
+                try {
+                    const apiKey = ""; // 여기에 Gemini API 키를 입력하세요.
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+                    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
+                    const result = await response.json();
+                    const aiResponse = result.candidates[0].content.parts[0].text;
+                    setHelpContent(aiResponse);
+
+                } catch (e) {
+                    console.error("AI Help error:", e);
+                    setHelpContent("도움말을 불러오는 중 오류가 발생했습니다.");
+                } finally {
+                    setIsHelpLoading(false);
+                }
+            };
+            
+            const handleSave = async (generatePdfAfterSave) => {
+                setIsSaving(true);
+                try {
+                    const docRef = await addDoc(collection(db, "reports"), {
+                        studentInfo: data.studentInfo,
+                        growData: reportData,
+                        createdAt: serverTimestamp()
+                    });
+                    console.log("리포트 저장 성공, ID: ", docRef.id);
+                    if(generatePdfAfterSave) {
+                        generatePdf();
+                    } else {
+                        alert("리포트가 클라우드에 성공적으로 저장되었습니다!");
+                    }
+                } catch (e) {
+                    console.error("Firestore 저장 오류: ", e);
+                    onError("리포트를 클라우드에 저장하는 중 오류가 발생했습니다.");
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+
+            const generatePdf = () => {
+                if (!window.jspdf || !window.jspdf.jsPDF || !window.jspdf.autoTable) {
+                    onError("PDF 생성 라이브러리가 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+                    return;
+                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const { name, session, date } = data.studentInfo;
+                const { goal, reality, options, will, nextSessionQuestions } = reportData;
+
+                doc.addFileToVFS('D2Coding-normal.ttf', D2Coding);
+                doc.addFont('D2Coding-normal.ttf', 'D2Coding', 'normal');
+                doc.setFont('D2Coding');
+
+                doc.setFontSize(22);
+                doc.text('GROW 코칭 리포트', 105, 20, { align: 'center' });
+
+                doc.setFontSize(12);
+                doc.text(`학생 이름: ${name}`, 20, 40);
+                doc.text(`상담 회차: ${session}회차`, 20, 48);
+                doc.text(`상담 일자: ${date}`, 20, 56);
+
+                const tableData = [
+                    ['G (Goal)', goal],
+                    ['R (Reality)', `강점: ${reality.strengths.join(', ')}\n어려움: ${reality.challenges.join(', ')}`],
+                    ['O (Options)', options.map(o => `- ${o}`).join('\n')],
+                    ['W (Will)', will],
+                ];
+                
+                if (nextSessionQuestions && nextSessionQuestions.length > 0) {
+                    tableData.push(['다음 회차 질문', nextSessionQuestions.map(q => `- ${q}`).join('\n')]);
+                }
+
+
+                doc.autoTable({
+                    startY: 70,
+                    head: [['항목', '내용']],
+                    body: tableData,
+                    theme: 'grid',
+                    styles: { font: 'D2Coding', cellPadding: 3, fontSize: 10 },
+                    headStyles: { fillColor: [22, 160, 133], fontStyle: 'bold' },
+                    columnStyles: {
+                        0: { fontStyle: 'bold', cellWidth: 30 },
+                        1: { cellWidth: 'auto' }
+                    }
+                });
+
+                const filename = `${name}_${session}회차_${date.replace(/-/g, '')}.pdf`;
+                doc.save(filename);
+            };
+
+            if (!reportData) {
+                return <div className="text-center">리포트 데이터를 불러오는 중...</div>;
+            }
+
+            return (
+                <div className="animate-fade-in">
+                    {helpTarget && (
+                        <HelpModal
+                            title={helpTarget.title}
+                            isLoading={isHelpLoading}
+                            content={helpContent}
+                            onClose={() => setHelpTarget(null)}
+                        />
+                    )}
+
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">최종 리포트 확인</h2>
+                    <p className="text-slate-500 mb-6">{data.studentInfo.name} 학생의 상담 내용입니다. 저장 전 마지막으로 수정할 수 있습니다.</p>
+
+                    <div className="space-y-4">
+                        <EditableField label="G (Goal) - 목표" value={reportData.goal} onHelpClick={() => requestHelp('goal', '목표 (Goal)', reportData.goal)} onChange={e => handleFieldChange('goal', e.target.value)} isTextarea />
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <label className="font-bold text-slate-700">R (Reality) - 현실 파악</label>
+                                <HelpButton onClick={() => requestHelp('reality', '현실 파악 (Reality)', [...reportData.reality.strengths, ...reportData.reality.challenges])} />
+                            </div>
+                            <div className="p-3 mt-2 bg-slate-50 rounded-lg space-y-2">
+                                <EditableField label="강점" value={reportData.reality.strengths.join(', ')} onChange={e => handleFieldChange('reality.strengths', e.target.value.split(',').map(s => s.trim()))} isSubfield />
+                                <EditableField label="어려움" value={reportData.reality.challenges.join(', ')} onChange={e => handleFieldChange('reality.challenges', e.target.value.split(',').map(s => s.trim()))} isSubfield />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <label className="font-bold text-slate-700">O (Options) - 대안 탐색</label>
+                                <HelpButton onClick={() => requestHelp('options', '대안 탐색 (Options)', reportData.options)} />
+                            </div>
+                            {reportData.options.map((option, index) => (
+                                <EditableField key={index} value={option} onChange={e => handleArrayChange('options', index, e.target.value)} isArray />
+                            ))}
+                        </div>
+                        <EditableField label="W (Will) - 실행 계획" value={reportData.will} onHelpClick={() => requestHelp('will', '실행 계획 (Will)', reportData.will)} onChange={e => handleFieldChange('will', e.target.value)} isTextarea />
+                        
+                        {reportData.nextSessionQuestions && reportData.nextSessionQuestions.length > 0 && (
+                          <div className="mt-4">
+                            <label className="font-bold text-slate-700">💡 다음 상담을 위한 추천 질문 (AI)</label>
+                            <div className="p-3 mt-2 bg-indigo-50 rounded-lg space-y-2 border border-indigo-200">
+                              {reportData.nextSessionQuestions.map((q, i) => (
+                                <p key={i} className="text-slate-800 text-sm flex items-start">
+                                  <span className="mr-2">✔️</span>
+                                  <span>{q}</span>
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-4 mt-8">
+                         <button onClick={() => handleSave(true)} disabled={isSaving} className="w-full md:flex-1 bg-teal-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-teal-700 transition disabled:bg-slate-400 disabled:cursor-wait">
+                            {isSaving ? '저장 중...' : '☁️ 클라우드에 저장 & PDF 다운로드'}
+                        </button>
+                        <button onClick={onReset} className="w-full md:w-auto bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition">
+                            🏠 처음으로
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 6. 누적 분석 결과 표시 컴포넌트 ---
+        function AnalysisReport({ result, onReset }) {
+            const renderMarkdown = (text) => {
+                let html = text
+                    .replace(/^# (.*$)/gim, '<h2 class="text-2xl font-bold mt-8 mb-3 text-slate-900 border-b pb-2">$1</h2>')
+                    .replace(/^## (.*$)/gim, '<h3 class="text-xl font-bold mt-6 mb-2 text-slate-800">$1</h3>')
+                    .replace(/^### (.*$)/gim, '<h4 class="text-lg font-semibold mt-4 mb-1 text-slate-700">$1</h4>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/`([^`]+)`/g, '<code class="bg-slate-200 text-slate-800 rounded px-1 py-0.5">$1</code>')
+                    .replace(/^- (.*$)/gim, '<li class="ml-5 list-disc">$1</li>')
+                    .replace(/\n/g, '<br />');
+                
+                html = html.replace(/<br \s?\/?>(\s*<li)/g, '$1');
+                html = html.replace(/(<\/li>)<br \s?\/?>/g, '$1');
+                html = `<ul>${html}</ul>`.replace(/<\/ul><br \s?\/?><ul>/g, '');
+                html = html.replace(/<\/strong><br \s?\/?>/g, '</strong>');
+
+                return { __html: html };
+            };
+
+            return (
+                <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">📈 누적 분석 리포트</h2>
+                    <p className="text-slate-500 mb-6">AI가 분석한 학생의 성장 과정 요약입니다.</p>
+
+                    <div className="prose max-w-none p-4 bg-slate-50 rounded-lg border leading-relaxed" dangerouslySetInnerHTML={renderMarkdown(result || "분석 결과를 불러오지 못했습니다.")}>
+                    </div>
+
+                    <button onClick={onReset} className="w-full mt-8 bg-slate-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-700 transition">
+                        🏠 처음으로 돌아가기
+                    </button>
+                </div>
+            );
+        }
+
+
+        // --- 7. 도움말 아이콘 및 모달 컴포넌트 ---
+        const HelpButton = ({ onClick }) => (
+            <button onClick={onClick} className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm hover:bg-indigo-200 hover:text-indigo-700 transition">
+                ?
+            </button>
+        );
+
+        function HelpModal({ title, content, isLoading, onClose }) {
+            const renderMarkdown = (text) => {
+                let html = text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^- (.*$)/gim, '<li>$1</li>')
+                    .replace(/\n/g, '<br />');
+
+                html = `<ul>${html}</ul>`.replace(/<\/ul><br \s?\/?><ul>/g, '');
+                html = html.replace(/<br \s?\/?>(\s*<li)/g, '$1');
+                html = html.replace(/(<\/li>)<br \s?\/?>/g, '$1');
+                
+                return { __html: html };
+            }
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in-fast">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg">
+                        <div className="p-4 border-b flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-indigo-700">💡 AI 헬퍼: {title}</h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-800 text-2xl leading-none">&times;</button>
+                        </div>
+                        <div className="p-6 min-h-[150px]">
+                            {isLoading ? (
+                                <div className="flex items-center justify-center h-full">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                </div>
+                            ) : (
+                                <div className="text-slate-700 leading-relaxed prose max-w-none" dangerouslySetInnerHTML={renderMarkdown(content)}></div>
+                            )}
+                        </div>
+                        <div className="p-4 bg-slate-50 border-t rounded-b-lg text-right">
+                            <button onClick={onClose} className="bg-indigo-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-indigo-700 transition">
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 8. 수정 가능한 필드 컴포넌트 ---
+        function EditableField({ label, value, onChange, onHelpClick, isTextarea = false, isSubfield = false, isArray = false }) {
+            const labelClass = isSubfield ? "font-semibold text-slate-600" : "font-bold text-slate-700";
+            const inputClass = "w-full p-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 transition-all";
+
+            const hasHelp = !!onHelpClick;
+
+            return (
+                <div className="w-full">
+                    {label && (
+                        <div className="flex items-center justify-between mb-1">
+                            <label className={labelClass}>{label}</label>
+                            {hasHelp && <HelpButton onClick={onHelpClick} />}
+                        </div>
+                    )}
+                    {isTextarea ? (
+                        <textarea value={value} onChange={onChange} className={inputClass} rows="3" />
+                    ) : (
+                        <input type="text" value={value} onChange={onChange} className={`${inputClass} ${isArray ? 'mt-2' : ''}`} />
+                    )}
+                </div>
+            );
+        }
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
