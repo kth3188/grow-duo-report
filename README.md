@@ -16,34 +16,3 @@
 4. **리포트 관리**  
    * **PDF 저장**: 모든 상담 내용은 깔끔한 형식의 PDF 파일로 다운로드할 수 있습니다.  
    * **클라우드 자동 저장**: 생성된 리포트는 학생별로 클라우드 데이터베이스에 자동으로 저장되어 언제든지 다시 확인하고 누적 분석에 활용할 수 있습니다.
-
-## **🛠️ 기술 스택**
-
-* **프론트엔드**: React.js  
-* **스타일링**: Tailwind CSS  
-* **데이터베이스**: Google Firestore  
-* **AI 모델**: Google Gemini API  
-* **PDF 생성**: jsPDF, jspdf-autotable
-
-## **🚀 설치 및 실행 방법**
-
-1. **프로젝트 클론**  
-   git clone https://github.com/your-username/grow-duo-report.git  
-   cd grow-duo-report
-
-2. **필요한 패키지 설치**  
-   npm install
-
-3. **Firebase 설정**  
-   * [Firebase 콘솔](https://console.firebase.google.com/)에서 새 프로젝트를 생성합니다.  
-   * 프로젝트 설정에서 웹 앱을 추가하고 firebaseConfig 객체를 복사합니다.  
-   * src/App.js 파일 상단의 firebaseConfig 변수에 복사한 값을 붙여넣습니다.  
-   * Firestore 데이터베이스를 생성하고, 보안 규칙을 테스트 모드 또는 필요에 맞게 설정합니다.  
-4. **Gemini API 키 설정**  
-   * [Google AI Studio](https://aistudio.google.com/)에서 API 키를 발급받습니다.  
-   * src/App.js 파일 내의 LoggingMode, CumulativeAnalysisMode, FinalReport 컴포넌트에서 apiKey 변수를 찾아 발급받은 키를 할당합니다.  
-   * **주의**: 보안을 위해 실제 배포 시에는 API 키를 환경 변수로 관리하는 것이 좋습니다.  
-5. **로컬 서버 실행**  
-   npm start
-
-   이제 브라우저에서 http://localhost:3000으로 접속하여 애플리케이션을 확인할 수 있습니다.
