@@ -82,7 +82,7 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
-                apiKey: "YOUR_API_KEY",
+                apiKey: "AIzaSyAzCGBQCzIh83NRSHFqYhwp7jUVh_qxkKw",
                 authDomain: "YOUR_AUTH_DOMAIN",
                 projectId: "YOUR_PROJECT_ID",
                 storageBucket: "YOUR_STORAGE_BUCKET",
@@ -488,7 +488,7 @@
                 `;
 
                 try {
-                    const apiKey = ""; // 여기에 Gemini API 키를 입력하세요.
+                    const apiKey = "AIzaSyAzCGBQCzIh83NRSHFqYhwp7jUVh_qxkKw"; // 여기에 Gemini API 키를 입력하세요.
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
                     const payload = {
                         contents: [{ parts: [{ text: prompt }] }],
@@ -646,7 +646,7 @@
                 `;
 
                 try {
-                    const apiKey = ""; // 여기에 Gemini API 키를 입력하세요.
+                    const apiKey = "AIzaSyAzCGBQCzIh83NRSHFqYhwp7jUVh_qxkKw"; // 여기에 Gemini API 키를 입력하세요.
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
                     const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
@@ -781,7 +781,7 @@
                     : `You are a helpful coaching assistant. The user is reviewing the '${title}' section of a GROW model report. The current content is: '${Array.isArray(content) ? content.join(', ') : content}'. Please review this content based on the principles of effective coaching and provide constructive feedback or suggestions for improvement in a concise, bullet-pointed list. Respond in Korean.`;
 
                 try {
-                    const apiKey = ""; // 여기에 Gemini API 키를 입력하세요.
+                    const apiKey = "AIzaSyAzCGBQCzIh83NRSHFqYhwp7jUVh_qxkKw"; // 여기에 Gemini API 키를 입력하세요.
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
                     const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
@@ -1061,3 +1061,4 @@
     </script>
 </body>
 </html>
+
